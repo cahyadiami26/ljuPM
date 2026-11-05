@@ -184,30 +184,55 @@ $daysLeft = daysRemaining($project['target_end_date']);
                 $assignee = $task['assigned_to'] ? getUserById($task['assigned_to']) : null;
                 $attachments = getTaskAttachments($task['id']);
                 $taskDaysLeft = daysRemaining($task['target_end_date']);
+                $priorityData = PRIORITY_OPTIONS[$task['priority']] ?? null;
             ?>
             <div class="kanban-card priority-<?= $task['priority'] ?>" 
                  data-task-id="<?= $task['id'] ?>" 
                  style="background: <?= $task['card_color'] ?>;"
                  onclick="openTaskDetail(<?= $task['id'] ?>)">
+                
+                <!-- Priority Badge -->
+                <?php if ($priorityData): ?>
+                <div class="mb-2">
+                    <span class="badge bg-<?= $priorityData['badge'] ?>-soft text-<?= $priorityData['badge'] ?>" style="font-size: 10px;">
+                        <i class="fas fa-exclamation-circle me-1"></i><?= htmlspecialchars($priorityData['label']) ?>
+                    </span>
+                </div>
+                <?php endif; ?>
+
                 <div class="kanban-card-title"><?= htmlspecialchars($task['title']) ?></div>
                 <?php if (!empty($task['description'])): ?>
                 <div class="kanban-card-desc"><?= htmlspecialchars($task['description']) ?></div>
                 <?php endif; ?>
-                <div class="kanban-card-footer">
-                    <div class="kanban-card-meta">
+                
+                <div class="kanban-card-footer mt-2 pt-2 border-top">
+                    <div class="kanban-card-meta d-flex align-items-center gap-2">
                         <?php if ($task['target_end_date']): ?>
-                            <span class="text-<?= getDaysRemainingColor($taskDaysLeft) ?>" title="Target: <?= formatDate($task['target_end_date']) ?>">
-                                <i class="fas fa-calendar"></i><?= date('d M', strtotime($task['target_end_date'])) ?>
+                            <span class="badge bg-light text-<?= getDaysRemainingColor($taskDaysLeft) ?> border" title="Target End: <?= formatDate($task['target_end_date']) ?>" style="font-size: 10px;">
+                                <i class="fas fa-calendar-alt me-1"></i><?= date('d M Y', strtotime($task['target_end_date'])) ?>
+                                <?php if ($taskDaysLeft !== null): ?>
+                                    (<?= $taskDaysLeft < 0 ? abs($taskDaysLeft) . 'h terlambat' : ($taskDaysLeft === 0 ? 'Hari ini' : $taskDaysLeft . 'h lagi') ?>)
+                                <?php endif; ?>
                             </span>
+                        <?php else: ?>
+                            <span class="text-muted small" style="font-size: 10px;"><i class="far fa-calendar me-1"></i>No Target</span>
                         <?php endif; ?>
+
                         <?php if (!empty($attachments)): ?>
-                            <span><i class="fas fa-paperclip"></i><?= count($attachments) ?></span>
+                            <span class="text-muted small" style="font-size: 10px;"><i class="fas fa-paperclip me-1"></i><?= count($attachments) ?></span>
                         <?php endif; ?>
                     </div>
+                    
+                    <!-- Assigned To Avatar & Name -->
                     <?php if ($assignee): ?>
-                        <div class="kanban-card-assignee" title="<?= htmlspecialchars($assignee['name']) ?>">
-                            <?= getUserInitials($assignee['name']) ?>
+                        <div class="d-flex align-items-center gap-1" title="Assigned to: <?= htmlspecialchars($assignee['name']) ?>">
+                            <div class="kanban-card-assignee" style="width:24px;height:24px;font-size:9px;">
+                                <?= getUserInitials($assignee['name']) ?>
+                            </div>
+                            <span class="small text-truncate" style="font-size: 10px; max-width: 80px;"><?= htmlspecialchars($assignee['name']) ?></span>
                         </div>
+                    <?php else: ?>
+                        <span class="text-muted fst-italic" style="font-size: 10px;">Unassigned</span>
                     <?php endif; ?>
                 </div>
             </div>
