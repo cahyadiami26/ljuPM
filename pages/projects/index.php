@@ -348,11 +348,11 @@ function renderProjectRow($proj, $currentUser) {
 <!-- Status Tabs -->
 <div class="d-flex gap-2 mb-4 flex-wrap">
     <a href="?page=projects&action=index<?= $scope ? '&scope='.$scope : '' ?>" class="btn btn-sm <?= empty($filters['status']) ? 'btn-primary' : 'btn-outline-primary' ?>">
-        All <span class="badge bg-white text-primary ms-1"><?= count($projects) ?></span>
+        All <span class="badge bg-red text-primary ms-1"><?= count($projects) ?></span>
     </a>
     <?php foreach (PROJECT_STATUS as $key => $val): ?>
         <a href="?page=projects&action=index&status=<?= $key ?><?= $scope ? '&scope='.$scope : '' ?>" class="btn btn-sm <?= $filters['status'] === $key ? 'btn-primary' : 'btn-outline-primary' ?>">
-            <?= $val['label'] ?> <span class="badge bg-white text-primary ms-1"><?= $counts[$key] ?></span>
+            <?= $val['label'] ?> <span class="badge bg-red text-primary ms-1"><?= $counts[$key] ?></span>
         </a>
     <?php endforeach; ?>
 </div>
