@@ -73,9 +73,15 @@ function renderProjectCard($proj, $currentUser) {
     $daysLeft = daysRemaining($proj['target_end_date']);
     
     $pmDb = db();
+    // Hitung total task dalam project
     $stmt = $pmDb->prepare("SELECT COUNT(*) as total FROM tasks WHERE project_id = ?");
     $stmt->execute([$proj['id']]);
     $taskCount = $stmt->fetch()['total'];
+
+    // Hitung total task yang di-assign ke currentUser
+    $stmtUser = $pmDb->prepare("SELECT COUNT(*) as total FROM tasks WHERE project_id = ? AND assigned_to = ?");
+    $stmtUser->execute([$proj['id'], $currentUser['id']]);
+    $userTaskCount = $stmtUser->fetch()['total'];
     ?>
     <div class="col-md-6 col-xl-4">
         <div class="info-card h-100 project-card" style="cursor:pointer;" onclick="window.location.href='<?= BASE_URL ?>/?page=projects&action=view&id=<?= $proj['id'] ?>'">
@@ -114,6 +120,12 @@ function renderProjectCard($proj, $currentUser) {
                     </div>
                 </div>
                 
+                <!-- Jumlah Task & Task Assigned ke User di bawah garis setelah nama bidang -->
+                <div class="d-flex gap-2 mb-2" style="font-size: 11px;">
+                    <span class="badge bg-light text-dark border"><i class="fas fa-tasks me-1"></i>Total: <?= $taskCount ?> task</span>
+                    <span class="badge bg-primary text-primary"><i class="fas fa-user-check me-1"></i>Task Saya: <?= $userTaskCount ?></span>
+                </div>
+
                 <p class="small text-muted mb-3" style="min-height:36px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">
                     <?= htmlspecialchars($proj['description'] ?? 'Tidak ada deskripsi') ?>
                 </p>
@@ -176,6 +188,17 @@ function renderProjectRow($proj, $currentUser) {
     $leader = getProjectLeader($proj['id']);
     $isCreator = ((int)$proj['created_by'] === (int)$currentUser['id']);
     $canDel = $isCreator || isAdmin();
+
+    $pmDb = db();
+    // Hitung total task dalam project
+    $stmt = $pmDb->prepare("SELECT COUNT(*) as total FROM tasks WHERE project_id = ?");
+    $stmt->execute([$proj['id']]);
+    $taskCount = $stmt->fetch()['total'];
+
+    // Hitung total task yang di-assign ke currentUser
+    $stmtUser = $pmDb->prepare("SELECT COUNT(*) as total FROM tasks WHERE project_id = ? AND assigned_to = ?");
+    $stmtUser->execute([$proj['id'], $currentUser['id']]);
+    $userTaskCount = $stmtUser->fetch()['total'];
     ?>
     <tr>
         <td>
@@ -183,8 +206,13 @@ function renderProjectRow($proj, $currentUser) {
             <a href="<?= BASE_URL ?>/?page=projects&action=view&id=<?= $proj['id'] ?>" class="fw-bold text-decoration-none" style="font-size: 14px;">
                 <?= htmlspecialchars($proj['title']) ?>
             </a>
-            <div class="text-muted" style="font-size: 11px;">
+            <div class="text-muted mb-1" style="font-size: 11px;">
                 <i class="far fa-calendar-alt me-1 text-info"></i>Dibuat: <?= formatDate($proj['created_at'], 'datetime') ?>
+            </div>
+            <!-- Jumlah Task & Task Assigned ke User di bawah tanggal pembuatan project pada list view -->
+            <div class="d-flex gap-2 mt-1 mb-1" style="font-size: 11px;">
+                <span class="badge bg-light text-dark border"><i class="fas fa-tasks me-1"></i>Total: <?= $taskCount ?> task</span>
+                <span class="badge bg-primary text-primary"><i class="fas fa-user-check me-1"></i>Task Saya: <?= $userTaskCount ?></span>
             </div>
             <?php if (!empty($proj['description'])): ?>
                 <div class="small text-muted mt-1"><?= htmlspecialchars(substr($proj['description'], 0, 50)) ?><?= strlen($proj['description']) > 50 ? '...' : '' ?></div>
