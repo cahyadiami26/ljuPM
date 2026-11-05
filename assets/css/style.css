@@ -1227,6 +1227,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .bg-primary { background: var(--primary) !important; }
 .bg-white { background: #fff !important; }
+.bg-red { background: #dc3545 !important; }
 
 .border-primary { border-color: var(--primary) !important; }
 
