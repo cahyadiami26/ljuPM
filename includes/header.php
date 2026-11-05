@@ -3,6 +3,7 @@ if (!defined('BASE_URL')) {
     require_once __DIR__ . '/../config/app.php';
     require_once __DIR__ . '/../config/session.php';
     require_once __DIR__ . '/../includes/functions.php';
+    //require_once __DIR__ . '/../config/database.php';
 }
 
 $currentUser = getCurrentUser();
@@ -10,6 +11,28 @@ $currentPage = $_GET['page'] ?? 'dashboard';
 $pageTitle = $pageTitle ?? APP_NAME;
 $avatar = $_SESSION['avatar'];
 $currentUseravatar = "https://dms.lju.co.id/uploads/avatars/".$avatar;
+$currId = $_SESSION['user_id'];
+$conn = db();
+$stmt = $conn->prepare("SELECT
+    l.*,
+    p.title AS project_title,
+    t.title AS task_title,
+    t.assigned_to
+FROM activity_log l
+JOIN projects p ON l.project_id = p.id
+JOIN tasks t ON l.task_id = t.id
+WHERE l.action IN ('task_created', 'task_updated', 'task_moved')
+  AND t.assigned_to = ?
+  AND l.created_at >= DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY)
+  AND l.created_at < DATE_ADD(
+      DATE_SUB(CURDATE(), INTERVAL WEEKDAY(CURDATE()) DAY),
+      INTERVAL 7 DAY
+  )
+ORDER BY l.created_at DESC");
+$stmt->execute([$currId]);
+$notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$notifCount = count($notifications);
+    
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -112,41 +135,51 @@ $currentUseravatar = "https://dms.lju.co.id/uploads/avatars/".$avatar;
             <div class="dropdown">
                 <button class="navbar-icon-btn" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-bell"></i>
-                    <span class="notif-badge">3</span>
+                    <?php if ($notifCount > 0): ?>
+                        <span class="notif-badge"><?= $notifCount ?></span>
+                    <?php endif; ?>
                 </button>
-                <div class="dropdown-menu dropdown-menu-end notif-dropdown">
-                    <div class="notif-header">
+                <div class="dropdown-menu dropdown-menu-end notif-dropdown" style="max-height: 350px; overflow-y: auto;">
+                    <div class="notif-header d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
                         <h6 class="mb-0">Notifications</h6>
-                        <a href="#" class="text-primary small">Mark all read</a>
+                        <span class="badge bg-primary rounded-pill"><?= $notifCount ?> baru</span>
                     </div>
                     <div class="notif-body">
-                        <a href="#" class="notif-item">
-                            <div class="notif-icon bg-primary-soft">
-                                <i class="fas fa-tasks text-primary"></i>
+                        <?php if ($notifCount > 0): ?>
+                            <?php foreach ($notifications as $notif): ?>
+                                <?php 
+                                    // Tentukan ikon & warna berdasarkan aksi
+                                    $iconClass = 'fa-tasks text-primary';
+                                    $bgClass = 'bg-primary-soft';
+                                    $actionText = 'Task diperbarui';
+                                    
+                                    if ($notif['action'] === 'task_created') {
+                                        $iconClass = 'fa-plus-circle text-success';
+                                        $bgClass = 'bg-success-soft';
+                                        $actionText = 'Task baru dibuat';
+                                    } elseif ($notif['action'] === 'task_moved') {
+                                        $iconClass = 'fa-exchange-alt text-warning';
+                                        $bgClass = 'bg-warning-soft';
+                                        $actionText = 'Status task dipindahkan';
+                                    }
+                                ?>
+                                <a href="<?= BASE_URL ?>/?page=projects&action=view&id=<?= $notif['project_id'] ?>" class="notif-item d-flex align-items-start px-3 py-2 border-bottom text-decoration-none">
+                                    <div class="notif-icon <?= $bgClass ?> p-2 rounded me-3 text-center" style="min-width: 35px;">
+                                        <i class="fas <?= $iconClass ?>"></i>
+                                    </div>
+                                    <div class="notif-content overflow-hidden">
+                                        <div class="notif-title fw-bold text-dark text-truncate" style="font-size: 0.85rem;"><?= htmlspecialchars($notif['task_title']) ?></div>
+                                        <div class="small text-muted text-truncate"><?= $actionText ?> di <?= htmlspecialchars($notif['project_title']) ?></div>
+                                        <div class="notif-time text-muted" style="font-size: 0.75rem;"><?= date('d M Y, H:i', strtotime($notif['created_at'])) ?></div>
+                                    </div>
+                                </a>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="text-center py-4 text-muted small">
+                                <i class="fas fa-bell-slash fa-2x mb-2"></i>
+                                <p class="mb-0">Tidak ada notifikasi minggu ini.</p>
                             </div>
-                            <div class="notif-content">
-                                <div class="notif-title">New task assigned</div>
-                                <div class="notif-time">2 minutes ago</div>
-                            </div>
-                        </a>
-                        <a href="#" class="notif-item">
-                            <div class="notif-icon bg-warning-soft">
-                                <i class="fas fa-clock text-warning"></i>
-                            </div>
-                            <div class="notif-content">
-                                <div class="notif-title">Task deadline approaching</div>
-                                <div class="notif-time">1 hour ago</div>
-                            </div>
-                        </a>
-                        <a href="#" class="notif-item">
-                            <div class="notif-icon bg-success-soft">
-                                <i class="fas fa-check-circle text-success"></i>
-                            </div>
-                            <div class="notif-content">
-                                <div class="notif-title">Project completed</div>
-                                <div class="notif-time">Yesterday</div>
-                            </div>
-                        </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
